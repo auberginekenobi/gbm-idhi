@@ -1,0 +1,19 @@
+**/.DS_Store
+**/.ipynb_checkpoints
+
+# Data directories
+cutntag/bowtie2
+cutntag/macs3
+cutntag/Sequencing\ QC/20250416_JN00021111_TAG_Report
+cutntag/Sequencing\ QC/fastp
+rnaseq/Sequencing\ QC/02.Report_X207SC24040362-Z01-F001
+rnaseq/Sequencing\ QC/fastp
+
+# Output directories
+# Figures, data files, etc
+**/out
+*.xlsx
+*.csv
+*.tsv
+*.svg
+*.png

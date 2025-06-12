@@ -1,0 +1,204 @@
+2025-05-23
+
+Data transfer
+
+Received data from Maeda-san this week. Looks like Cut&TAG and RNA-seq for her IDH inhibition experiment in GBM cell
+lines.
+
+Experimental design:
+    Cut&TAG:
+        Cell line MGG152
+        3 conditions: 
+            DMSO (-ctrl), 
+            UNC0379, 
+            Combination DS-1001b + UNC0379 (what is DS?)
+        Antibody: 
+            H3K27ac (+ctrl), 
+            IgG (-ctrl), 
+            H4K20me1-mouse
+        3 replicates each
+        Total 27 samples.
+    RNAseq:
+        Cell line MGG152
+        4 conditions: 
+            DMSO (-ctrl), 
+            DS-1001b 5um, 
+            UNC0379 1um, 
+            Combination DS-1001b 5um + UNC0379 1um
+        3 replicates each
+        Total 12 samples.
+
+Data transfer:
+rsync -avhpe ssh /Volumes/HDPH-UT/IDHinhibitor_* ochapman@slogin.hgc.jp:/home/ochapman/data/20250523_maeda_idhi
+RNA-seq 61Gb
+CUTandTag 145Gb
+
+Files:
+CUT&Tag: DMS0 x18, UNC x18, Comb x18
+RNAseq:
+    No md5sums for 
+        MGG152_5um_DS_{1..3}_R{1..2}.fastq.gz
+        MGG152_DMSO_{1..3}_R{1..2}.fastq.gz
+        MGG152_UNC{1..3}_{1..2}.fq.gz
+    Seems trim_galore has already been run on 5um_DS and DMSO samples as well.
+    Mapping
+        S5 --> MGG152_DS_UNC_combi_1
+        S6 --> MGG152_DS_UNC_combi_2
+        S7 --> MGG152_DS_UNC_combi_3
+
+Biology:
+(From  Maeda)
+DS-1001b is a selective inhibitor targeting the IDH1 R132H mutation. This mutation leads to the abnormal production of 
+2-hydroxyglutarate (2-HG), which inhibits epigenetic regulators such as TET and KDM. As a result, DNA and histone 
+demethylation is suppressed, contributing to the blockade of cellular differentiation and tumorigenesis. 
+By suppressing the accumulation of 2-HG, DS-1001b restores the activity of these enzymes, thereby promoting tumor cell 
+differentiation and inhibiting tumor growth.
+On the other hand, UNC0379 is a small-molecule inhibitor of KMT5A, a methyltransferase that catalyzes monomethylation 
+of lysine 20 on histone H4 (H4K20me1). H4K20me1 is typically associated with actively transcribed regions and enhancers, 
+and is generally linked to gene activation. It has also been reported to increase during the S phase of the cell cycle, 
+suggesting a role in DNA replication and cell division. However, some studies suggest that H4K20me1 may also be involved 
+in gene repression, indicating that its functional role can be context-dependent and remains incompletely understood.
+In this study, we hypothesize that UNC0379 suppresses H4K20me1, which leads to the downregulation of tumor-promoting 
+genes and, consequently, inhibition of tumor growth. This may represent the most straightforward mechanism to explore 
+at this stage.
+Moreover, IDH1-mutant cells are known to exhibit epigenetic dysregulation and defects in DNA repair pathways. We 
+therefore speculate that inhibition of KMT5A by UNC0379 may exert a synthetic lethal effect in such cells. For example, 
+the combination of DS-1001b and UNC0379 could potentially achieve a dual effect: inducing cellular differentiation and 
+disrupting DNA damage response mechanisms.
+
+
+2025-05-27
+
+CUT&Tag analysis
+
+From Kohei:
+Thank you very much for your e-mail. I used this page (https://www.protocols.io/view/cut-amp-tag-data-processing-and-analysis-tutorial-e6nvw93x7gmk/v1) as a reference for CUT&Tag analysis. Our analysis pipeline is as follows:
+(1) Remove adapter sequence with Skewer.
+(2) Perform quality control with FASTQC.
+(3) Align to hg38 with bowtie2.
+(4) Call peaks with MACS2.
+Following the tutorial, I did not remove any PCR duplicates using Picard.
+
+From Aoki:
+I’ve performed CUT&Tag analysis as outlined below:
+Quality control (Fastp)
+Mapping (Bowtie2)
+Peak calling (MACS2)
+Differential peak analysis (DiffBind)
+I also conducted a PCA analysis to compare the different conditions.
+As you can see in the attached file, there appear to be no significant differential peaks among the groups.
+
+From the internet;
+    Fred Hutch tutorial: https://hutchdatascience.org/Choosing_Genomics_Tools/cutrun-and-cuttag.html
+    Henikoff lab protocol: https://www.protocols.io/view/cut-amp-tag-data-processing-and-analysis-tutorial-e6nvw93x7gmk/v1
+
+fastp
+fastp --thread 4 \
+    -i /home/ochapman/projects/idhi/cutntag/input/UNC_IgG_3_1.fastq.gz -I /home/ochapman/projects/idhi/cutntag/input/UNC_IgG_3_2.fastq.gz \
+    -o UNC_ctrl_3_1.fq.gz -O UNC_ctrl_3_2.fq.gz \
+    --detect_adapter_for_pe --correction --overrepresentation_analysis --dedup \
+    --trim_poly_g --low_complexity_filter --complexity_threshold 15 \
+    --json UNC_ctrl_3.json --html UNC_ctrl_3.html --report_title fastp_report_for_experiment_UNC_ctrl_replicate_3\
+(Non-default options: --correction --dedup --detect_adapter_for_pe --trim_poly_g --low_complexity_filter --complexity_threshold 15)
+
+QC looks ok. Read pass rate after filtering and deduplication for experimental samples is 66-89%.
+    Read pass rate for IgG controls is 20-29%, owing largely to high PCR duplication rate.
+Other notes:
+    10bp periodicity "suggestive of preferential cut events on one side of the helix:
+        https://www.protocols.io/view/bench-top-cut-amp-tag-kqdg34qdpl25/v3?step=69
+    ~45bp insert size peak subnucleosomal, could be partially nucleosome-bound or linker region, but unclear to me why
+        a preference for 45bp.
+    ~180bp insert size peak expected for targeting histone modifications (nucleosome length)
+        https://yezhengstat.github.io/CUTTag_tutorial/
+        https://www.protocols.io/view/cut-amp-tag-data-processing-and-analysis-tutorial-e6nvw93x7gmk/v1
+
+bowtie2
+Recommended parameterization from Kohei citing 
+    https://www.protocols.io/view/cut-amp-tag-data-processing-and-analysis-tutorial-e6nvw93x7gmk/v1
+    changes: use samtools view -f 2 (include mapped and properly paired) instead of -F 4 (exclude unmapped)
+
+peak calling
+    Henikoff lab recommend their bespoke tool SEACR but seem to acknowledge that MACS is a viable alternative.
+    Their paper makes a convincing case that SEACR is more specific:
+        https://epigeneticsandchromatin.biomedcentral.com/articles/10.1186/s13072-019-0287-4
+    
+MACS3
+macs3 callpeak --treatment /home/ochapman/projects/idhi/cutntag/bowtie2/UNC_H3K27ac_2.sort.bam \
+    --control /home/ochapman/projects/idhi/cutntag/bowtie2/UNC_ctrl_2.sort.bam \
+    --gsize hs --format BAMPE --name UNC_H3K27ac_2 --qvalue 0.01 --call-summits --keep-dup all
+(Changes: macs2->macs3; use deduplicated reads from fastp; --call-summits)
+
+DiffBind
+https://bioconductor.org/packages/release/bioc/vignettes/DiffBind/inst/doc/DiffBind.pdf
+Installation
+    A giant mess of poor versioning from these developers, plus bioconductor and bioconda not supporting the latest versions, and me trying to use jupyter.
+    Tl;dr my environment.yml file specifies r-base=4.3 and bioconductor-diffbind=3.12.0, which are the latest supported versions precompiled for osx-64. One could 
+    probably get the latest diffbind to work if using native R for package management.
+Notes
+-   DiffBind only accepts specific keywords in its experimental design. Therefore,
+    Factor <- Antibody
+    Condition <- UNC0379
+    Treatment <- DS1001-b
+-   Seems that DMSO_H3K27ac_1 and DMSO_H4K20me1_1 are  sample swaps. Swapping them back in the diffbind analysis BUT NOT in previous step outputs (yet).
+-   Running on both antibodies uses too much memory and is probably inadvisable anyway. Running separately on H3K27ac and H4K20Me1.
+-   Running dba.count as `dba.count(dba_h3k27ac,summits=FALSE,minOverlap=2,bUseSummarizeOverlaps=TRUE,bParallel=TRUE)`
+        bUseSummarizeOverlaps=TRUE - slower but smaller memory footprint
+        summits=FALSE - Use reads overlapping peak instead of reads overlapping peak summits. Faster and better for broad peaks?
+-   DiffBind greylist support fails for NCBI chromosome names. Fix from 
+    # https://support.bioconductor.org/p/9138617/#9148413
+-   Modelled antibodies separately,
+    drugs and batch as independent effects.
+
+RESULTS
+
+Without swapping, no significantly differential peaks.
+
+Swapping back the two suspected sample swaps:
+    Ab          Drug        Up      Down    Total
+    H3K27ac     DS-1001b    399     6       405
+    H3K27ac     UNC0379     64      4       68
+    H4K20me1    DS-1001b    3380    470     3850
+    H4K20me1    UNC0379     150     462     612
+
+README
+Results generated after re-swapping suspected label swaps, DMSO_H3K27ac_1 and DMSO_H4K20Me1_1.
+
+    {antibody}_{drug}_differential_peaks.tsv    Significantly differential peaks by generalized linear model (DESeq2) with independent linear effects of both drugs and batch. 
+        Positive fold change indicates increased binding in drug condition.
+    {antibody}_{drug}_MAplot.svg    MA plot for the above model.
+    {antibody}_{drug}_volcanoplot.svg   Volcano plot for the above model.
+    heatmap_all.svg Pairwise Pearson correlations of binary peak presence/absence across all samples.
+    heatmap_{antibody}_peaks.svg    Pairwise Pearson correlations of binary peak presence/absence across samples in that antibody condition.
+    heatmap_{antibody}_counts.svg   Pairwise Pearson correlations of read counts mapping to peaks across samples in that antibody condition.
+
+TODO
+    High priority: 
+        look for synthetic lethal interactions with an interaction term
+        examine other normalizations, edgeR
+        Code clean and refactor
+        Integrate RNA-seq
+    Low priority:
+        Implement SEACR
+        Format figures
+        Deeptools plots
+
+2025-05-29
+
+RNAseq analysis
+
+fastp
+fastp --thread 4 \
+    -i /home/ochapman/projects/idhi/rnaseq/input/MGG152_UNC2_1.fq.gz -I /home/ochapman/projects/idhi/rnaseq/input/MGG152_UNC2_2.fq.gz \
+    -o UNC_REP2_1.fq.gz -O UNC_REP2_2.fq.gz \
+    --detect_adapter_for_pe --correction --overrepresentation_analysis --dedup \
+    --trim_poly_g --low_complexity_filter --complexity_threshold 15 --trim_poly_x \
+    --json UNC_REP2.json --html UNC_REP2.html --report_title fastp_report_for_UNC_REP2
+(same as CUT&Tag but also --trim-poly-x)
+
+error for MGG152_UNC2, unable to decompress.
+Confirmed source file is corrupted:
+gzip -t MGG152_UNC_1-3\ 2/MGG152_UNC2_2.fq.gz
+gzip: invalid compressed data--crc error
+gzip: MGG152_UNC_1-3 2/MGG152_UNC2_2.fq.gz: uncompress failed
+
+Conclusion: fastq corrupted. Will hold off on further RNA-seq analysis until Aoki / Maeda team can rescue or resequence the sample.

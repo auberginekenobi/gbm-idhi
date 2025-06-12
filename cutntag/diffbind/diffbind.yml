@@ -1,0 +1,29 @@
+# Differential binding analysis: diffbind
+# Also includes corrplot for Henikoff lab plotting scripts.
+name: diffbind
+
+channels:
+  - conda-forge
+  - bioconda
+  - r
+
+dependencies:
+  - r-base=4.3
+  - bioconductor-diffbind=3.12.0
+  - r-corrplot
+  - r-irkernel
+  - jupyter_client
+  - bioconductor-enhancedvolcano
+  - r-tidyverse
+  - r-patchwork
+  - r-extrafont
+  - r-svglite
+
+# Install this environment from file using
+# CONDA_SUBDIR=osx-64 conda env create -f diffbind.yml
+
+# Link this env to jupyter using
+# NAME=diffbind; conda activate $NAME; Rscript -e "IRkernel::installspec(name = '${NAME}', displayname = '${NAME}')"; conda config --env --set subdir osx-64; conda deactivate
+
+# Use osx-64 for all other package installations:
+# conda config --env --set subdir osx-64
