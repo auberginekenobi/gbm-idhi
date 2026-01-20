@@ -177,6 +177,8 @@ TODO
         examine other normalizations, edgeR
         Code clean and refactor
         Integrate RNA-seq
+        Generate .bed files
+        ** Results to a shared directory ** 
     Low priority:
         Implement SEACR
         Format figures
@@ -202,3 +204,80 @@ gzip: invalid compressed data--crc error
 gzip: MGG152_UNC_1-3 2/MGG152_UNC2_2.fq.gz: uncompress failed
 
 Conclusion: fastq corrupted. Will hold off on further RNA-seq analysis until Aoki / Maeda team can rescue or resequence the sample.
+
+
+2026-1-13
+
+Meeting
+
+Synthetic lethal drug with IDH1 inhibitor, low-grade glioma
+
+IDH
+	WT: Isocitrate -> alpha-KG
+	Mut: a-KG -> 2-HG
+		-> genome-wide demethylation
+	IDH1 cytosol, IDH2 mitochondria
+
+DS1001b - IDH1 inhibitor
+Vorasidenib - FDA approved IDH inhibitor
+
+MGG152, BT142 cell lines - inhibit 2-HG production, but no effect on cell survival
+	-> Resistant lines
+
+Genome-wide CRISPR screen
+	-> KMT5A, H4K20 monommethyltransferase
+	UNC0379 - KMT5A inhibitor
+	
+Combination therapy - great success
+	sensitive in combination only;
+	apoptosis -^-
+	cell cycle -v-
+	
+RNA-seq, Cut&Tag
+
+
+2025-1-19
+
+Data analysis of new RNA-seq, Cut&Tag data
+
+Received raw sequencing for RNA-seq and Cut&Tag experiments,
+as well as transcript quantification (HTSeq) and quantifications of H4K20me binding within 2kb of TSS (quantification unknown)
+
+RNA-seq
+
+PCA
+- MGG152_UNC1 a clear outlier
+- After removal, PC1 strongly correlated with sequencing depth (83%) variance
+- No obvious association with treatment in PCS 2 or 3.
+
+Differential Expression
+- DE for IDHi:
+    gene    baseMean    l2FC            lfcSE       p               q
+    CBLN1	175.0304	-3.06166e-05	0.001442798	3.860136e-06	0.04981505
+- DE for KMT5A:
+    H1-0	382.3084	0.7500887	    0.1811774	1.43793e-06	    0.01855649
+- No significant hits for vorasidenib-specific effect
+- No significant hits for synergistic effect
+
+Plots to maeda-idhi/rnaseq/results
+
+Todo:
+Compare to the pairwise comparisons done by Aoki?
+Re-quantify from sequencing?
+Positive control dataset?
+
+Cut&TAG
+
+MDS
+No outliers, no obvious clustering by treatment.
+
+Differential TSS binding
+- DE for IDHi:
+  |gene     |logFC	        |AveExpr	|t	        |P.Value    	| adj.P.Val     |        B|
+  |---------|---------------|-----------|-----------|---------------|---------------|---------|
+  |ROCK1P1	|-0.67959413	|4.26730113	|-6.374184	|1.755699e-07	|0.004328501	|7.0067709|
+- No significant hits for UNC0379 effect
+- No significant hits for vorasidenib-specific effect
+- No significant hits for synergistic effect
+
+
