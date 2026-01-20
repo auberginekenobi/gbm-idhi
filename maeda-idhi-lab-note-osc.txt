@@ -72,7 +72,8 @@ disrupting DNA damage response mechanisms.
 CUT&Tag analysis
 
 From Kohei:
-Thank you very much for your e-mail. I used this page (https://www.protocols.io/view/cut-amp-tag-data-processing-and-analysis-tutorial-e6nvw93x7gmk/v1) as a reference for CUT&Tag analysis. Our analysis pipeline is as follows:
+Thank you very much for your e-mail. I used this page (https://www.protocols.io/view/cut-amp-tag-data-processing-and-analysis-tutorial-e6nvw93x7gmk/v1)
+ as a reference for CUT&Tag analysis. Our analysis pipeline is as follows:
 (1) Remove adapter sequence with Skewer.
 (2) Perform quality control with FASTQC.
 (3) Align to hg38 with bowtie2.
@@ -272,6 +273,8 @@ MDS
 No outliers, no obvious clustering by treatment.
 
 Differential TSS binding
+Using robust empirical bayes, no hits for any comparison.
+Using robust = FALSE,
 - DE for IDHi:
   |gene     |logFC	        |AveExpr	|t	        |P.Value    	| adj.P.Val     |        B|
   |---------|---------------|-----------|-----------|---------------|---------------|---------|
@@ -279,5 +282,27 @@ Differential TSS binding
 - No significant hits for UNC0379 effect
 - No significant hits for vorasidenib-specific effect
 - No significant hits for synergistic effect
+ROCK1P1 is a major outlier in terms of average TSS occupancy in this dataset, so I think some sort of validation would be 
+necessary to explain why this gene doesn't behave like all the others.
 
+DISCUSSION (sent to Maeda and Aoki)
+As I said, it's surprising to me that systematic differences were not observed between treatment groups given that drug treatment 
+ had an obvious phenotypic effect. It is concerning that the largest 2 signals in the RNA-seq data are an outlier and sequencing
+ depth even after library normalization, because it tells us that any differences with respect to treatment group are small if
+ they are observable at all. At least I would have expected markers of cell stress or cell death. As I recall, however, we saw a 
+ similar result in the first round of CUT&Tag done last year. Of the few differential genes identified (CBLN1, H1-0, ROCK1P1), none
+ seem to have strong prior associations in the literature with IDH-mutant glioma. Some functional validation would probably be 
+ needed to confirm these as biologically relevant targets.
+
+I also don't fully understand why these results are so different than the conclusions you presented at our meeting last week. It could
+ clear up some confusion when you send your code over. Do I recall you mentioned that there were few differential genes, which motivated
+ a refocus on pathway analysis instead? In any case, while sometimes useful, I would be wary of drawing conclusions using only fgsea in 
+ the absence of other supporting data, due to its tendency to inflate p-values.
+
+Considering next steps, I think it will be necessary to better understand these sequencing data to make sure the conclusions we draw
+ are reproducible. For example, I have not yet run this batch of sequencing through our sequencing data processing pipelines, which would 
+ verify that no errors were introduced during the data processing step.  I'd be curious to see your differential expression analyses to see 
+ if they agree with my own. Also, we could consider a joint analysis of this and your first batch of sequencing from last year. And we could 
+ also troubleshoot the sample collection or library preparation protocols if any problems are suspected there. I expect that prioritization 
+ of additional analysis will have to be balanced against the short timeline you have to submit, however. 
 
